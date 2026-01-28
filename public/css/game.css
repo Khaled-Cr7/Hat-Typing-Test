@@ -1,0 +1,4 @@
+.pending { color: gray; }
+.correct { color: green; }
+.incorrect { color: red; }
+.active { border-bottom: 2px solid blue; }
