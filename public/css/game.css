@@ -1,4 +1,54 @@
-.pending { color: gray; }
-.correct { color: green; }
-.incorrect { color: red; }
-.active { border-bottom: 2px solid blue; }
+body {
+  background-color: #323437;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+  font-family: 'Roboto Mono', monospace;
+}
+
+.game-container {
+  width: 80%;
+  max-width: 900px;
+  position: relative;
+}
+
+#text-wrapper {
+  font-size: 1.5rem;
+  line-height: 2.2rem;
+  height: 6.6rem; /* Shows roughly 3 lines */
+  overflow: hidden; /* Standard for "moving down" effect */
+  color: #646669;
+  word-break: break-all;
+  user-select: none;
+}
+
+#text {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Character States */
+.pending { color: #646669; }
+.correct { color: #d1d0c5; }
+.incorrect { color: #ca4754; border-bottom: 2px solid #ca4754; }
+
+/* The Cursor */
+.active {
+  color: #d1d0c5;
+  border-left: 2px solid #e2b714;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  50% { border-color: transparent; }
+}
+
+/* Hide the input but keep it functional */
+#input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}

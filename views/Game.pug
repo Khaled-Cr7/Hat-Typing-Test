@@ -1,13 +1,17 @@
 doctype html
 html
   head
-    title Typing Test
+    title Hat Typing Test
     link(rel="stylesheet", href="/css/game.css")
   body
-    h1 Typing Speed Test
-
-    div#text
-
-    input#input(type="text" autofocus autocomplete="off")
-
+    .game-container
+      //- The container that holds the words
+      #text-wrapper
+        #text
+      //- Hidden input to capture keystrokes without being visible
+      input#input(type="text", autocomplete="off", autofocus)
+    
+    #results.hidden
+    
     script(src="/js/game.js")
+    
