@@ -3,15 +3,53 @@ html
   head
     title Hat Typing Test
     link(rel="stylesheet", href="/css/game.css")
-  body
-    .game-container
-      //- The container that holds the words
-      #text-wrapper
-        #text
-      //- Hidden input to capture keystrokes without being visible
-      input#input(type="text", autocomplete="off", autofocus)
     
-    #results.hidden
+  body
+    .app-layout
+      .sidebar
+
+        #user-display
+          p#player-name-label
+          p#best-result-label Best: 0 WPM
+        
+
+        img.logo(src="/images/logo.png" style="width: 190px; margin-bottom: 10px;")
+        
+
+        .mode-selector
+          button.mode-btn(data-mode="words") Words
+          button.mode-btn(data-mode="time") Time
+      .main-area
+        .count-selector
+          button.count-btn(data-value="10") 10
+          button.count-btn(data-value="25") 25
+          button.count-btn(data-value="50") 50
+          button.count-btn(data-value="100") 100
+
+        //- The container stays, but the number inside will show/hide
+        #timer-placeholder
+          #timer-display.hidden 0 
+
+        .game-container
+          #text-wrapper
+            #text
+          input#input(type="text", autocomplete="off", autofocus)
+
+    //- The Result Modal with "Designed" buttons
+    #result-modal.modal.hidden
+      .modal-content
+        h2 test finished
+        .stats
+          .stat-item
+            span.stat-label wpm
+            span#wpm-result.stat-value 0
+          .stat-item
+            span.stat-label acc
+            span#acc-result.stat-value 0%
+        .modal-buttons
+          //- Using 'modal-btn' class for the specific design we put in CSS
+          button#restart-btn.modal-btn Restart
+          button#next-btn.modal-btn Next Test
     
     script(src="/js/game.js")
     

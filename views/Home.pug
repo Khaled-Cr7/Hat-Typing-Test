@@ -2,11 +2,23 @@ doctype html
 html
   head
     title Hat Typing Test
-    link(rel="stylesheet", href="/css/home.css")
+    link(rel="stylesheet", href="/css/game.css")
   body
-    main.container
-      h1 🧢 Hat Typing Test
-      p Test your typing speed and accuracy.
+    main.modal
+      .modal-content
+        img.logo(src="/images/logo.png" style="width: 190px;")
+        h2 welcome
+        input#username-input(type="text", placeholder="enter your name...", style="background:none; border:none; border-bottom: 2px solid var(--accent); color: var(--main-text); text-align: center; font-family: inherit; font-size: 1.2rem; margin: 20px 0; outline: none;")
+        br
+        button#start-btn.modal-btn Start Test
 
-      a(href="/game")
-        button Start Test
+    script.
+      const input = document.getElementById('username-input');
+      const btn = document.getElementById('start-btn');
+      
+      btn.addEventListener('click', () => {
+        if(input.value.trim()) {
+          sessionStorage.setItem('playerName', input.value.trim());
+          window.location.href = '/game';
+        }
+      });

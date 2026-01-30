@@ -7,8 +7,7 @@ router.get("/", (req, res) => {
     res.render("Game");
 });
 
-// API Route to get the words for the test
-// The error was likely here; ensure it uses gameController.startGame
+
 router.get("/start", gameController.startGame);
 
 module.exports = router;

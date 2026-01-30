@@ -2,15 +2,125 @@ let testState = null;
 const inputField = document.getElementById("input");
 const textContainer = document.getElementById("text");
 
+// Check localStorage for saved mode/amount, otherwise use defaults
+// 1. Get the saved mode (default to "words")
+let currentMode = localStorage.getItem("gameMode") || "words"; 
+
+// 2. Get the saved amount
+let savedAmount = localStorage.getItem("gameAmount");
+
+// 3. Logic: If there is a saved amount, use it. 
+// If NOT, use the mode's default (15 for time, 25 for words).
+let currentAmount;
+if (savedAmount) {
+    currentAmount = parseInt(savedAmount);
+} else {
+    currentAmount = (currentMode === "time") ? 15 : 25;
+}
+let currentText = "";
+let timerInterval = null;    
+let totalTyped = 0;
 // Refocus input whenever user clicks anywhere
 document.addEventListener("click", () => inputField.focus());
 
-fetch("/game/start")
-  .then(res => res.json())
-  .then(data => {
-    testState = createTestState(data.text);
-    renderText();
+function startNewGame(amount, reuseText = false) {
+  // 1. Update the variable and the UI highlights first
+  currentAmount = amount;
+  highlightActiveSettings(); // <--- Call it here!
+
+  // 2. Clear existing state
+  clearInterval(timerInterval);
+  document.getElementById("result-modal").classList.add("hidden");
+  totalTyped = 0; // Reset accuracy counter
+
+  if (reuseText && currentText) {
+    setupGame(currentText);
+  } else {
+    const fetchCount = (currentMode === "time") ? 100 : currentAmount;
+    fetch(`/game/start?length=${fetchCount}`)
+      .then(res => res.json())
+      .then(data => {
+        currentText = data.text;
+        setupGame(currentText);
+      });
+  }
+}
+
+function initUser() {
+  const name = sessionStorage.getItem('playerName') || 'Guest';
+  const best = localStorage.getItem('bestWPM') || 0;
+  
+  document.getElementById('player-name-label').innerText = name;
+  document.getElementById('best-result-label').innerText = `Best: ${best} WPM`;
+}
+
+function setupGame(text) {
+  testState = createTestState(text);
+  if (currentMode === "time") {
+    testState.timeLeft = currentAmount;
+    updateTimerUI(currentAmount);
+  } else {
+    updateTimerUI(null);
+  }
+  inputField.value = "";
+  renderText();
+}
+
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    currentMode = btn.getAttribute('data-mode');
+    
+    // Reset to defaults when CHANGING modes
+    currentAmount = (currentMode === "time") ? 15 : 25;
+
+    // Save both to the "notebook"
+    localStorage.setItem("gameMode", currentMode);
+    localStorage.setItem("gameAmount", currentAmount);
+    
+    updateCountButtons();
+    startNewGame(currentAmount);
   });
+});
+
+
+function updateTimerUI(val) {
+  const timerDisplay = document.getElementById("timer-display");
+  if (!timerDisplay) return;
+
+  if (currentMode === "words" || val === null) {
+    timerDisplay.classList.add("hidden");
+  } else {
+    timerDisplay.innerText = val;
+    timerDisplay.classList.remove("hidden");
+  }
+}
+
+// Update your updateCountButtons to remove the "s" so math doesn't break
+function updateCountButtons() {
+  const buttons = document.querySelectorAll('.count-btn');
+  // Keep these as pure numbers
+  const wordValues = ["10", "25", "50", "100"];
+  const timeValues = ["15", "30", "60", "120"]; 
+  
+  const values = (currentMode === "words") ? wordValues : timeValues;
+  
+  buttons.forEach((btn, index) => {
+    btn.setAttribute('data-value', values[index]);
+    btn.innerText = values[index] + (currentMode === "time" ? "s" : "");
+  });
+}
+
+
+document.querySelectorAll('.count-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    currentAmount = parseInt(btn.getAttribute('data-value'));
+    
+    // SAVE the specific number chosen
+    localStorage.setItem("gameAmount", currentAmount);
+    
+    startNewGame(currentAmount);
+  });
+});
 
 function createTestState(text) {
   return {
@@ -27,15 +137,38 @@ function createTestState(text) {
 }
 
 function renderText() {
-  textContainer.innerHTML = testState.chars
-    .map((c, i) => {
-      let cls = c.status;
-      if (i === testState.cursor) cls += " active";
-      return `<span class="${cls}">${c.char}</span>`;
-    })
-    .join("");
+  // Clear container
+  textContainer.innerHTML = "";
+  
+  let currentWordDiv = document.createElement("div");
+  currentWordDiv.className = "word";
+  textContainer.appendChild(currentWordDiv);
 
-  // Logic to "go down" (scroll) as user types
+  testState.chars.forEach((c, i) => {
+  const span = document.createElement("span");
+  
+  // If the character is a space, we give it a special visible character or class
+  if (c.char === " ") {
+    span.innerHTML = "&nbsp;"; // Non-breaking space
+    span.className = "space " + c.status;
+  } else {
+    span.innerText = c.char;
+    span.className = c.status;
+  }
+
+  if (i === testState.cursor) span.classList.add("active");
+
+    currentWordDiv.appendChild(span);
+
+    // If this character is a space, start a new "word" container
+    if (c.char === " ") {
+      currentWordDiv = document.createElement("div");
+      currentWordDiv.className = "word";
+      textContainer.appendChild(currentWordDiv);
+    }
+  });
+
+  // Scroll logic
   const activeSpan = document.querySelector('.active');
   if (activeSpan) {
     activeSpan.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -45,7 +178,13 @@ function renderText() {
 inputField.addEventListener("keydown", e => {
   if (!testState || testState.finished) return;
 
-  if (!testState.startTime) testState.startTime = Date.now();
+  if (!testState.startTime) {
+    testState.startTime = Date.now();
+  
+    if (currentMode === "time") {
+      startTimer();
+  }
+}
 
   if (e.key === "Backspace") {
     handleBackspace();
@@ -60,9 +199,15 @@ function handleChar(input) {
   const current = testState.chars[testState.cursor];
   if (!current) return;
 
-  current.status = (input === current.char) ? "correct" : "incorrect";
-  if (current.status === "correct") testState.correct++;
-  else testState.incorrect++;
+  totalTyped++; // Track every single keypress for accuracy
+
+  if (input === current.char) {
+    current.status = "correct";
+    testState.correct++;
+  } else {
+    current.status = "incorrect";
+    testState.incorrect++;
+  }
 
   testState.cursor++;
   if (testState.cursor === testState.chars.length) finishTest();
@@ -77,9 +222,58 @@ function handleBackspace() {
   char.status = "pending";
 }
 
+function startTimer() {
+  timerInterval = setInterval(() => {
+    testState.timeLeft--;
+    updateTimerUI(testState.timeLeft); // Show the time on screen
+
+    if (testState.timeLeft <= 0) {
+      clearInterval(timerInterval);
+      finishTest();
+    }
+  }, 1000);
+}
+
+
+function highlightActiveSettings() {
+  // Highlight Mode
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-mode') === currentMode);
+  });
+
+  // Highlight Amount
+  document.querySelectorAll('.count-btn').forEach(btn => {
+    // We parse both as numbers to ensure they match exactly
+    const btnVal = parseInt(btn.getAttribute('data-value'));
+    btn.classList.toggle('active', btnVal === currentAmount);
+  });
+}
+
+
 function finishTest() {
+  clearInterval(timerInterval);
   testState.finished = true;
+
   const minutes = (Date.now() - testState.startTime) / 60000;
   const wpm = Math.round((testState.correct / 5) / minutes);
-  alert(`Test Finished! WPM: ${wpm}`);
+  
+  // Logic for Best Result
+  const savedBest = parseInt(localStorage.getItem('bestWPM') || 0);
+  if (wpm > savedBest) {
+    localStorage.setItem('bestWPM', wpm);
+    document.getElementById('best-result-label').innerText = `Best: ${wpm} WPM`;
+  }
+
+  document.getElementById("wpm-result").innerText = wpm;
+  document.getElementById("acc-result").innerText = 
+    (totalTyped > 0 ? Math.round((testState.correct / totalTyped) * 100) : 0) + "%";
+    
+  document.getElementById("result-modal").classList.remove("hidden");
 }
+
+document.getElementById("restart-btn").addEventListener("click", () => startNewGame(currentAmount, true));
+document.getElementById("next-btn").addEventListener("click", () => startNewGame(currentAmount, false));
+
+initUser();
+updateCountButtons();
+startNewGame(currentAmount);
