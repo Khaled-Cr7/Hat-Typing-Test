@@ -30,6 +30,7 @@ function startNewGame(amount, reuseText = false) {
 
   // 2. Clear existing state
   clearInterval(timerInterval);
+  document.querySelector('.main-area').classList.remove('typing');
   document.getElementById("result-modal").classList.add("hidden");
   totalTyped = 0; // Reset accuracy counter
 
@@ -82,6 +83,23 @@ document.querySelectorAll('.mode-btn').forEach(btn => {
   });
 });
 
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    startNewGame(currentAmount, false); 
+  }
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault(); // Prevents the browser from clicking a focused button twice
+    
+    // Reset accuracy and state
+    totalTyped = 0; 
+    
+    // Start fresh test
+    startNewGame(currentAmount, false);
+  }
+});
 
 function updateTimerUI(val) {
   const timerDisplay = document.getElementById("timer-display");
@@ -178,13 +196,13 @@ function renderText() {
 inputField.addEventListener("keydown", e => {
   if (!testState || testState.finished) return;
 
+  // Add a class to the main area to hide the hint while typing
+  document.querySelector('.main-area').classList.add('typing');
+
   if (!testState.startTime) {
     testState.startTime = Date.now();
-  
-    if (currentMode === "time") {
-      startTimer();
+    if (currentMode === "time") startTimer();
   }
-}
 
   if (e.key === "Backspace") {
     handleBackspace();

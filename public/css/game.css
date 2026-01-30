@@ -254,4 +254,31 @@ body {
   opacity: 0.9;
 }
 
+#keyboard-hint {
+  margin-top: 25px;
+  font-size: 0.8rem;
+  color: var(--sub-text);
+  opacity: 0.6;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: opacity 0.3s ease;
+}
+
+/* Make the 'enter' text look like a small physical key */
+.key-cap {
+  background-color: #e8e0cc; /* Slightly darker than bg-color */
+  border: 1px solid #d1ccc0;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 0.7rem;
+  color: var(--main-text);
+  box-shadow: 0 2px 0 #d1ccc0;
+}
+
+/* Hide the hint when the user starts typing to clear the screen */
+.typing #keyboard-hint {
+  opacity: 0;
+}
+
 .hidden { display: none !important; }
